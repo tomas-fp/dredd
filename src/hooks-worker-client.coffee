@@ -169,17 +169,19 @@ class HooksWorkerClient
       logger.info "Hook handler stderr:", data.toString()
 
     @handler.on 'exit', (status) =>
-      if status?
-        if status isnt 0
-          msg = "Hook handler '#{@handlerCommand}' exited with status: #{status}"
-          logger.error msg
-          @runner.hookHandlerError = new Error msg
-      else
-        # No exit status code means the hook handler was killed
+      if not status? or status is 137
+        # No exit status code means the hook handler was killed. Sometimes
+        # the process can also get 137 status code (137 = 128 + 9 = SIGKILL).
         unless @handlerKilledIntentionally
           msg = "Hook handler '#{@handlerCommand}' was killed"
-          logger.error msg
-          @runner.hookHandlerError = new Error msg
+          logger.error(msg)
+          @runner.hookHandlerError = new Error(msg)
+
+      else if status isnt 0
+        msg = "Hook handler '#{@handlerCommand}' exited with status: #{status}"
+        logger.error(msg)
+        @runner.hookHandlerError = new Error(msg)
+
       @handlerEnded = true
 
     @handler.on 'error', (error) =>
