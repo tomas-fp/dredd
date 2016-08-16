@@ -1,7 +1,35 @@
 sudo: false
-language: "ruby"
+language: ruby
 before_install:
-  - "npm install -g dredd"
-rvm:
-  - "1.9.3"
-  - "2.2.4"
+  - >-
+    curl -X POST -H "Content-Type: application/json" -H "Authorization: token
+    $GH_TOKEN" -d "{\"state\":\"pending\",\"description\":\"Dependent build
+    created\",\"context\":\"continuous-integration/travis-ci/ruby-hooks-handler\",\"target_url\":\"https://travis-ci.org/apiaryio/dredd/builds/$TRAVIS_BUILD_ID\"}"
+    'https://api.github.com/repos/apiaryio/dredd/statuses/9bf73e73d9938188cdbd59ca748639bb6263a83a'
+  - npm link --python=python2 ./__dredd__
+  - npm install npm@latest
+rvm: '2.2'
+env:
+  global:
+    secure: >-
+      MIlZ58WqYeSB3Kjb1Kqp/5RHX91NCWOeSViYNcEbwBXHoFxs1I6gboVjbiqURjrJN08V+VXwReavgHvq2Z3N5Ogd2YCQKoPn8rdIM4f8u9dYWqidodrmbc+fmSYoJkUU53BtepLvRrJvlq7Ua9EH1TlPm7PaOUGGLNczS/JdIPU=
+after_failure:
+  - >-
+    curl -X POST -H "Content-Type: application/json" -H "Authorization: token
+    $GH_TOKEN" -d "{\"state\":\"error\",\"description\":\"Dependent build
+    finished\",\"context\":\"continuous-integration/travis-ci/ruby-hooks-handler\",\"target_url\":\"https://travis-ci.org/apiaryio/dredd/builds/$TRAVIS_BUILD_ID\"}"
+    'https://api.github.com/repos/apiaryio/dredd/statuses/9bf73e73d9938188cdbd59ca748639bb6263a83a'
+after_success:
+  - >-
+    curl -X POST -H "Content-Type: application/json" -H "Authorization: token
+    $GH_TOKEN" -d "{\"state\":\"success\",\"description\":\"Dependent build
+    finished\",\"context\":\"continuous-integration/travis-ci/ruby-hooks-handler\",\"target_url\":\"https://travis-ci.org/apiaryio/dredd/builds/$TRAVIS_BUILD_ID\"}"
+    'https://api.github.com/repos/apiaryio/dredd/statuses/9bf73e73d9938188cdbd59ca748639bb6263a83a'
+  - >-
+    if [[ $TRAVIS_BRANCH = master ]]; then echo "Deleting aborted (master)" &&
+    exit 1; fi
+  - git branch -D $TRAVIS_BRANCH
+  - >-
+    git remote set-url origin "https://$GH_TOKEN@github.com/apiaryio/dredd.git"
+    > /dev/null 2>&1
+  - git push origin -f --delete $TRAVIS_BRANCH > /dev/null 2>&1
