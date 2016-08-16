@@ -1,0 +1,7 @@
+sudo: false
+language: "ruby"
+before_install:
+  - "npm install -g dredd"
+rvm:
+  - "1.9.3"
+  - "2.2.4"
