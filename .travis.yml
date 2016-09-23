@@ -1,7 +1,35 @@
 sudo: false
-language: "ruby"
+language: ruby
 before_install:
-  - "npm install -g dredd"
-rvm:
-  - "1.9.3"
-  - "2.2.4"
+  - >-
+    curl -X POST -H "Content-Type: application/json" -H "Authorization: token
+    $GH_TOKEN" -d "{\"state\":\"pending\",\"description\":\"Dependent build
+    created\",\"context\":\"continuous-integration/travis-ci/ruby-hooks-handler\",\"target_url\":\"https://travis-ci.org/apiaryio/dredd/builds/$TRAVIS_BUILD_ID\"}"
+    'https://api.github.com/repos/apiaryio/dredd/statuses/c78a78ed4369cd1b4b7af56580a2d6c1572d8ab0'
+  - npm install -g npm@latest
+  - npm link --python=python2 ./__dredd__
+rvm: '2.2'
+env:
+  global:
+    secure: >-
+      AtwrWDdNErHuNRU0mC6j4c6ZoqiWAnM0sydpoJ0BBNBUM2uN4zdOb8h9GL2NeUsf+S4wNwSwbe/DFgBQ6QFT43ZiKF+XD7/iDJXXE/kDz+GGsM0kZO0P+TMQD8fZyCnCzxeTWAe5/ucG017DuO6G3dsrh/3Hg9I6+UACcLyTbqM=
+after_failure:
+  - >-
+    curl -X POST -H "Content-Type: application/json" -H "Authorization: token
+    $GH_TOKEN" -d "{\"state\":\"error\",\"description\":\"Dependent build
+    finished\",\"context\":\"continuous-integration/travis-ci/ruby-hooks-handler\",\"target_url\":\"https://travis-ci.org/apiaryio/dredd/builds/$TRAVIS_BUILD_ID\"}"
+    'https://api.github.com/repos/apiaryio/dredd/statuses/c78a78ed4369cd1b4b7af56580a2d6c1572d8ab0'
+after_success:
+  - >-
+    curl -X POST -H "Content-Type: application/json" -H "Authorization: token
+    $GH_TOKEN" -d "{\"state\":\"success\",\"description\":\"Dependent build
+    finished\",\"context\":\"continuous-integration/travis-ci/ruby-hooks-handler\",\"target_url\":\"https://travis-ci.org/apiaryio/dredd/builds/$TRAVIS_BUILD_ID\"}"
+    'https://api.github.com/repos/apiaryio/dredd/statuses/c78a78ed4369cd1b4b7af56580a2d6c1572d8ab0'
+  - >-
+    if [[ $TRAVIS_BRANCH = master ]]; then echo "Deleting aborted (master)" &&
+    exit 1; fi
+  - git branch -D $TRAVIS_BRANCH
+  - >-
+    git remote set-url origin "https://$GH_TOKEN@github.com/apiaryio/dredd.git"
+    > /dev/null 2>&1
+  - git push origin -f --delete $TRAVIS_BRANCH > /dev/null 2>&1
